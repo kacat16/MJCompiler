@@ -1,0 +1,230 @@
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+import org.apache.log4j.*;
+
+import rs.ac.bg.etf.pp1.ast.*;
+import rs.ac.bg.etf.pp1.ast.Enum;
+
+
+parser code {:
+
+	boolean errorDetected = false;
+
+	Logger log = Logger.getLogger(getClass());
+
+    public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+      done_parsing();
+      report_error(message, info);
+    }
+
+    public void syntax_error(Symbol cur_token) {
+        report_error("\nSintaksna greska", cur_token);
+    }
+
+    public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+        report_fatal_error("Fatalna greska, parsiranje se ne moze nastaviti", cur_token);
+    }
+
+    public void report_error(String message, Object info) {
+        errorDetected = true;
+        StringBuilder msg = new StringBuilder(message);
+        if (info instanceof Symbol)
+            msg.append (" na liniji ").append(((Symbol)info).left);
+        log.error(msg.toString());
+    }
+
+    public void report_info(String message, Object info) {
+        StringBuilder msg = new StringBuilder(message);
+        if (info instanceof Symbol)
+            msg.append (" na liniji ").append(((Symbol)info).left);
+        log.info(msg.toString());
+    }
+
+:}
+
+scan with {:
+	Symbol s = this.getScanner().next_token();
+	if (s != null && s.value != null)
+		log.info(s.toString() + " " + s.value.toString());
+	return s;
+:}
+
+
+terminal ELSE,PLUS,RBRACE,RPAREN,EQUAL,SEMI,
+		RETURN,IF,LPAREN,LBRACE,COMMA,PROG,
+		PRINT,VOID,BREAK,CLASS,CONST,NEW,READ,EXTENDS,
+		CONTINUE,UNION,DO,WHILE,MAP,INTERFACE,MINUS,TIMES,DIVIDEDBY,MODUO,
+		IS_EQUAL,NOT_EQUAL,GREATER,GREATEREQ,LESS,LESSEQ,AND,OR,PLUSPLUS,MINUSMINUS,
+		COLON,DOT,LBRACKET,RBRACKET, LENGTH, ABSTRACT, FOR, ENUM, SWITCH, CASE, QUESTIONMARK;
+terminal Integer NUMBER;
+terminal String IDENT;
+terminal Character CHAR;
+terminal Boolean BOOL;
+nonterminal DeclList, Decl, ConstList, ConstType, VarDecls, IfArray, ClassDecl, EnumDecl, AbstractClassDecl, IfSubclass, ClassVarDecl, ClassVarDecls, ClassVarDeclList, VarDeclList, ListMethodDecl, MethodDeclList, MethodDefDecl, FunctionName, MethodList, FormParams, FormPars, FormPar, Statement, StatementList, CommaNumConstBrackets, CommaDesignatorStatementBrackets, ConditionBrackets, ActPars, Label, Assignop, Relop, Addop, Mulop, Setop, IdentOrExpr, ExprArrayConstr, ActParsBrackets, ActParsParensBrackets, DesignatorStatement, DoWhileStatement, ForStatementBeginning, DesignatorStatementFor, AbstractMethodDecl, Enum, EnumMemberDef, EnumDefinition, ListMethodDeclAbstract, DesignatorStatementOrEmpty, ConditionOrEmpty, CaseList, TernaryExpressions, SwitchBeginning, SwitchEnd, EnumDeclaration, Colon, ElsePart, Else, SecondExpr, Semi1For, Semi2For, ForParens, Case, ColonSwitch, CaseHeader, CaseItem, SwitchAfterExpr;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ProgName, Program, MethodDecl, MethodSignature, MethodTypeName, ConstPart, ConstDecl, Var, VarDecl, Designator, ArrayElemAccessDesignator, LengthDesignator, ArrayName;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Type, TypeOrVoid, TypeConstDecl, TypeVarDecl, Expr, Term, Factor, AddopTermList, NonTernaryExpr, TernaryExpr, CondTermP, CondTerm, ConditionP, Condition, CondFact;
+precedence left ELSE;
+
+
+Program ::= (Program) PROG ProgName:p DeclList LBRACE MethodDeclList RBRACE;
+
+ProgName ::= (ProgName) IDENT:progName;
+
+DeclList ::= (Declarations) DeclList Decl
+			|
+			(NoDecl) /* epsilon */
+			;
+Decl ::= (ConstD) ConstDecl
+		|
+		(VarD) VarDecl
+		|
+		(ClassD) ClassDecl
+		|
+		(EnumD) EnumDecl
+		|
+		(AbstractClassD) AbstractClassDecl
+		;
+ConstDecl ::= (ConstDeclaration) CONST TypeConstDecl ConstList SEMI | (ConstDeclError) CONST error SEMI:l {: parser.report_error("Izvrsen oporavak od greske u definiciji konstante do ; u liniji " + lleft, null); :};
+TypeConstDecl ::= (TypeConstDecl) Type:constType;
+ConstList ::= (Constants) ConstList COMMA ConstPart
+			| (Constant) ConstPart
+			;
+ConstPart ::= (Const) IDENT:constName EQUAL ConstType:typeOfConst | (ConstError) error:l {: parser.report_error("Izvrsen oporavak od greske u definiciji konstante u liniji " + lleft, null); :};
+ConstType ::= (NumberConst) NUMBER:numVal | (CharConst) CHAR:charVal | (BoolConst) BOOL:boolVal;
+VarDecl ::= (VarDeclaration) TypeVarDecl VarDecls SEMI
+			| (VarDeclError) error SEMI:l {: parser.report_error("Izvrsen oporavak od greske u definiciji globalne promenljive do ; u liniji " + lleft, null); :};
+TypeVarDecl ::= (TypeVarDecl) Type:varType;
+VarDecls ::= (MoreVarDecls) VarDecls COMMA Var
+			| (OneVarDecl) Var;
+Var ::= (VarElem) IDENT:varName IfArray | (VarError) error:l {: parser.report_error("Izvrsen oporavak od greske u definiciji globalne promenljive do , ili ; u liniji " + lleft, null); :};
+IfArray ::= (Array) LBRACKET RBRACKET
+			| (NoArray) /* epsilon */;
+ClassDecl ::= (ClassDecl) CLASS IDENT IfSubclass LBRACE ClassVarDeclList ListMethodDecl RBRACE;
+AbstractClassDecl ::= (AbstractClassDecl) ABSTRACT CLASS IDENT IfSubclass LBRACE ClassVarDeclList ListMethodDeclAbstract RBRACE;
+IfSubclass ::= (Subclass) EXTENDS Type
+			| (NoSubclass) /* epsilon */
+			| (SubclassError) error:l {: parser.report_error("Izvrsen oporavak od greske u deklaraciji prosirenja natklase do { u liniji " + lleft, null); :};
+ClassVarDecl ::= (ClassVarDeclaration) Type ClassVarDecls SEMI
+			| (ClassVarDeclError) error:l {: parser.report_error("Izvrsen oporavak od greske u deklaraciji polja unutrasnje klase do ; ili { u liniji " + lleft, null); :};
+ClassVarDecls ::= (ClassMoreVarDecls) ClassVarDecls COMMA IDENT IfArray
+			| (ClassOneVarDecl) IDENT IfArray;
+ClassVarDeclList ::= (ClassVarDeclarations) ClassVarDeclList ClassVarDecl
+				| (NoClassVarDecl) /* epsilon */;
+VarDeclList ::= (VarDeclarations) VarDeclList VarDecl
+				| (NoVarDecl) /* epsilon */
+				;
+EnumDecl ::= (EnumDecl) EnumDeclaration LBRACE EnumDefinition RBRACE;
+EnumMemberDef ::= (EnumMemberDefinition) EQUAL NUMBER
+				| (NoEnumMemberDefinition) /* epsilon */
+				;
+EnumDeclaration ::= (EnumDeclaration) ENUM IDENT;
+Enum ::= (Enum) IDENT EnumMemberDef;
+EnumDefinition ::= (MoreEnum) EnumDefinition COMMA Enum
+				| (OneEnum) Enum
+				;
+ListMethodDecl ::= (MethodDecls) LBRACE MethodDeclList RBRACE
+				| (NoMethodDecls) /*epsilon*/
+				;
+ListMethodDeclAbstract ::= (MethodDeclsAbstract) LBRACE MethodList RBRACE
+				| (NoMethodDeclsAbstract) /*epsilon*/
+				;
+MethodList ::= (Methods) MethodList MethodDefDecl
+				| (NoMethods) /* epsilon */
+				;
+MethodDeclList ::= (MethodDeclarations) MethodDeclList MethodDecl
+				| (NoMethodDeclarations) /* epsilon */
+				;
+MethodDefDecl ::= (MethodDeclSemi) MethodDecl SEMI
+				| (AbstractMethodDeclSemi) AbstractMethodDecl SEMI;
+AbstractMethodDecl ::= (AbstractMethodDecl) ABSTRACT MethodSignature;
+MethodDecl ::= (MethodDecl) MethodSignature VarDeclList LBRACE StatementList RBRACE;
+MethodSignature ::= (MethodSignature) MethodTypeName LPAREN FormParams RPAREN;
+MethodTypeName ::= (MethodTypeName) TypeOrVoid IDENT:methodName;
+TypeOrVoid ::= (RetType) Type:returnType | (RetVoid) VOID;
+Type ::= (Type) IDENT:typeName;
+FormParams ::= (FormParameters) FormPars
+				| (NoFormParameters) /* epsilon */;
+FormPars ::= (FormParsList) FormPars COMMA FormPar
+			|(OneFormPar) FormPar
+			;
+FormPar ::= (FormParam) Type:formParamType IDENT:formParamName IfArray | (FormParamError) error:l {: parser.report_error("Izvrsen oporavak od greske u deklaraciji formalnog parametra funkcije do , ili ) u liniji " + lleft, null); :};
+StatementList ::= (Statements) StatementList Statement
+				| (NoStatements) /* epsilon */;
+Label ::= (Label) IDENT;
+Assignop ::= (Assignop) EQUAL;
+Relop ::= (IsEqualRelop) IS_EQUAL | (NotEqualRelop) NOT_EQUAL | (GreaterRelop) GREATER | (GreaterEqualRelop) GREATEREQ | (LessRelop) LESS | (LessEqualRelop) LESSEQ;
+Addop ::= (PlusAddop) PLUS |(MinusAddop) MINUS;
+Mulop ::= (TimesMulop) TIMES | (DividedByMulop) DIVIDEDBY | (ModuoMulop) MODUO;
+Setop ::= (Setop) UNION;
+Statement ::= (DesignatorStatementSemi)  DesignatorStatement
+				| (IfStatement) IF LPAREN Condition RPAREN Statement
+				| (IfElse) IF LPAREN Condition RPAREN Statement ElsePart
+				| (BreakStatement) BREAK SEMI
+				| (ContinueStatement) CONTINUE SEMI
+				| (ReturnNonVoidStatement) RETURN Expr SEMI
+				| (ReturnVoidStatement) RETURN SEMI
+				| (ReadStatement) READ LPAREN Designator RPAREN SEMI
+				| (PrintStatementParams) PRINT LPAREN Expr COMMA NUMBER:numConst RPAREN SEMI
+				| (PrintStatementEmpty) PRINT LPAREN Expr RPAREN SEMI
+				| (SwitchStatement) SwitchBeginning LPAREN Expr RPAREN SwitchAfterExpr SwitchEnd
+				| (ForStatement) ForStatementBeginning ForParens Statement
+				| (MoreStatements) LBRACE StatementList RBRACE
+				;
+ForParens ::= (ForParens) LPAREN DesignatorStatementOrEmpty Semi1For ConditionOrEmpty Semi2For DesignatorStatementOrEmpty RPAREN;
+Semi1For::= (Semi1For) SEMI;
+Semi2For::=(Semi2For) SEMI;
+ElsePart ::= (ElsePart) Else Statement;
+Else ::= (Else) ELSE;
+SwitchBeginning ::= (SwitchBeginning) SWITCH;
+SwitchAfterExpr ::= (SwitchAfterExpr) /* epsilon */;
+SwitchEnd ::= (SwitchEnd) LBRACE CaseList RBRACE;
+CaseList ::= (MoreCases) CaseList CaseItem | (NoCase) /* epsilon */;
+CaseHeader ::= (CaseHeader) Case NUMBER:n ColonSwitch;
+CaseItem ::= (CaseItem) CaseHeader StatementList;
+Case::=(Case) CASE;
+ColonSwitch ::= (ColonSwitch) COLON;
+DesignatorStatementOrEmpty ::= (HasDesignatorStatement) DesignatorStatementFor | (NoDesignatorStatement) /* epsilon */;
+ConditionOrEmpty ::= (HasCondition) Condition | (NoCondition) /* epsilon */;
+DoWhileStatement ::= (DoWhileStatement) DO;
+ForStatementBeginning ::= (ForBegin) FOR;
+CommaNumConstBrackets ::= (CommaNumber) COMMA NUMBER
+						| (NoCommaNumber) /* epsilon */;
+CommaDesignatorStatementBrackets ::= (CommaDesignatorStatement) COMMA DesignatorStatement
+									| (NoCommaDesignatorStatement) /* epsilon */;
+ConditionBrackets ::= (ConditionCommaDesignatorStatement) Condition CommaDesignatorStatementBrackets
+					| (NoConditionCommaDesignatorStatement) /* epsilon */;
+CondFact ::= (CondFactRelopExpr) NonTernaryExpr Relop NonTernaryExpr | (CondFactExprOnly) NonTernaryExpr;
+CondTerm ::= (CondTerm) CondTermP;
+CondTermP ::= (MoreCondFactsCondTerm) CondTermP AND CondFact | (OneCondFactCondTerm) CondFact;
+Condition ::= (Condition) ConditionP;
+ConditionP ::= (MoreCondTermsCondition) ConditionP OR CondTerm | (OneCondTermCondition) CondTerm;
+Expr ::= (ExprNotTernary) NonTernaryExpr | (ExprTernary) TernaryExpr;
+NonTernaryExpr ::= (MinusTermsSumExpr) MINUS AddopTermList | (TermsSumExpr) AddopTermList;
+TernaryExpressions ::= (TernaryExpressions) Expr SecondExpr;
+SecondExpr ::= (SecondExpr) Colon Expr;
+Colon ::= (Colon) COLON;
+TernaryExpr ::= (TernaryExpr) Condition QUESTIONMARK TernaryExpressions;
+AddopTermList ::= (MoreAddopTerms) AddopTermList Addop Term | (SingleTerm) Term;
+Term ::= (MoreFactorsTerm) Term Mulop Factor | (OneFactorTerm) Factor;
+FunctionName ::= (FunctionName) Designator:functionName;
+Factor ::= (FactorFuncCall) FunctionName LPAREN ActParsBrackets RPAREN | (FactorDesignator) Designator | (NumberFactor) NUMBER:val | (CharFactor) CHAR:val | (BoolFactor) BOOL:val | (NewTypeFactor) NEW Type ExprArrayConstr | (ExprParensFactor) LPAREN Expr RPAREN;
+ExprArrayConstr ::= (ExprBrackets) LBRACKET Expr RBRACKET | (NoExprBrackets) /* epsilon */;
+ActParsBrackets ::= (ActParameters) ActPars | (NoActParameters) /* epsilon */;
+ActParsParensBrackets ::= (ActParametersParens) LPAREN ActParsBrackets RPAREN | (NoActParametersParens) /* epsilon */;
+ActPars ::= (MoreActPars) ActPars COMMA Expr | (OneActPar) Expr;
+Designator ::= (ArrayAccessDesignator) ArrayElemAccessDesignator | (FieldAccessDesignator) IDENT DOT IDENT:nxtDesignatorName | (Length) LengthDesignator | (OneDesignator) IDENT;
+ArrayElemAccessDesignator ::= (ArrayElemAccessDesignator) ArrayName LBRACKET Expr RBRACKET;
+ArrayName ::= (ArrayName) IDENT;
+LengthDesignator ::= (LengthDesignator) IDENT DOT LENGTH;
+IdentOrExpr ::= (DotIdentElem) DOT IDENT | (ExprElem) LBRACKET Expr RBRACKET;
+DesignatorStatement ::= (DesignatorAssignopExpr) Designator Assignop Expr SEMI
+						| (DesignatorFunction) FunctionName LPAREN ActParsBrackets RPAREN SEMI
+						| (DesignatorIncrement) Designator PLUSPLUS SEMI
+						| (DesignatorDecrement) Designator MINUSMINUS SEMI
+						| (DesignatorStatementError) error SEMI:l {: parser.report_error("Izvrsen oporavak od greske u konstrukciji iskaza dodele do ; u liniji " + lleft, null); :};
+
+DesignatorStatementFor ::= (DesignatorAssignopExprW) Designator Assignop Expr
+						| (DesignatorFunctionW) FunctionName LPAREN ActParsBrackets RPAREN
+						| (DesignatorIncrementW) Designator PLUSPLUS
+						| (DesignatorDecrementW) Designator MINUSMINUS;

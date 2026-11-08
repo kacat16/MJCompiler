@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="MJCompiler" default="compile" basedir=".">
+
+	<path id="project.classpath">
+		<pathelement location="lib/cup_v10k.jar"/>
+		<pathelement location="lib/log4j-1.2.17.jar"/>
+		<pathelement location="lib/symboltable-1-1.jar"/>
+		<pathelement location="lib/mj-runtime-1.1.jar"/>
+	</path>
+
+	<target name="check-dependencies">
+		<available file="lib/JFlex.jar" property="jflex.available"/>
+		<available file="lib/cup_v10k.jar" property="cup.available"/>
+		<available file="lib/log4j-1.2.17.jar" property="log4j.available"/>
+		<available file="lib/symboltable-1-1.jar" property="symbols.available"/>
+		<available file="lib/mj-runtime-1.1.jar" property="runtime.available"/>
+		<fail unless="jflex.available" message="Missing lib/JFlex.jar; see README.md."/>
+		<fail unless="cup.available" message="Missing lib/cup_v10k.jar; see README.md."/>
+		<fail unless="log4j.available" message="Missing lib/log4j-1.2.17.jar; see README.md."/>
+		<fail unless="symbols.available" message="Missing lib/symboltable-1-1.jar; see README.md."/>
+		<fail unless="runtime.available" message="Missing lib/mj-runtime-1.1.jar; see README.md."/>
+	</target>
+
+	<target name="delete" depends="check-dependencies">
+		<delete dir="src/rs/ac/bg/etf/pp1/ast"/>
+		<delete file="src/rs/ac/bg/etf/pp1/MJParser.java"/>
+		<delete file="src/rs/ac/bg/etf/pp1/Yylex.java"/>
+		<delete file="src/rs/ac/bg/etf/pp1/sym.java"/>
+		<delete file="spec/mjparser_astbuild.cup"/>
+	</target>
+
+	<target name="lexerGen" depends="delete">
+		<java jar="lib/JFlex.jar" fork="true" failonerror="true">
+			<arg value="-d"/>
+			<arg value="src/rs/ac/bg/etf/pp1"/>
+			<arg value="spec/mjlexer.flex"/>
+		</java>
+	</target>
+
+	<target name="parserGen" depends="lexerGen">
+		<java jar="lib/cup_v10k.jar" fork="true" failonerror="true">
+			<arg value="-destdir"/>
+			<arg value="src/rs/ac/bg/etf/pp1"/>
+			<arg value="-ast"/>
+			<arg value="src.rs.ac.bg.etf.pp1.ast"/>
+			<arg value="-parser"/>
+			<arg value="MJParser"/>
+			<arg value="-buildtree"/>
+			<arg value="spec/mjparser.cup"/>
+		</java>
+	</target>
+
+	<target name="repackage" depends="parserGen">
+		<replace dir="src" value="rs.ac.bg.etf.pp1.ast" token="src.rs.ac.bg.etf.pp1.ast" summary="true"/>
+	</target>
+
+	<target name="compile" depends="repackage">
+		<mkdir dir="build/classes"/>
+		<javac destdir="build/classes" includeantruntime="false" encoding="UTF-8">
+			<src path="src"/>
+			<src path="test"/>
+			<classpath refid="project.classpath"/>
+		</javac>
+	</target>
+
+	<target name="run" depends="compile">
+		<mkdir dir="logs"/>
+		<java classname="rs.ac.bg.etf.pp1.Compiler" fork="true" failonerror="true">
+			<classpath>
+				<pathelement location="build/classes"/>
+				<pathelement location="config"/>
+				<path refid="project.classpath"/>
+			</classpath>
+		</java>
+	</target>
+
+	<target name="disasm" depends="check-dependencies">
+		<java classname="rs.etf.pp1.mj.runtime.disasm" fork="true" failonerror="true">
+			<arg value="test/program.obj"/>
+			<classpath>
+				<pathelement location="lib/mj-runtime-1.1.jar"/>
+			</classpath>
+		</java>
+	</target>
+
+	<target name="runObj" depends="disasm">
+		<java classname="rs.etf.pp1.mj.runtime.Run" fork="true" failonerror="true">
+			<arg value="test/program.obj"/>
+			<redirector input="input.txt"/>
+			<classpath>
+				<pathelement location="lib/mj-runtime-1.1.jar"/>
+			</classpath>
+		</java>
+	</target>
+
+</project>
