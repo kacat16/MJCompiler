@@ -52,14 +52,14 @@ public class MJSemanticTest  {
 
 			log.info(" Print count calls = " + v.printCallCount);
 
-			log.info(" Deklarisanih promenljivih ima = " + v.varDeclCount);
+			log.info(" Declared variables = " + v.varDeclCount);
 			log.info("===================================");
 			Tab.dump();
 
 			if(!p.errorDetected && v.passed()){
-				log.info("Parsiranje uspesno zavrseno!");
+				log.info("Parsing completed successfully!");
 			}else{
-				log.error("Parsiranje NIJE uspesno zavrseno!");
+				log.error("Parsing did not complete successfully!");
 			}
 
 		}

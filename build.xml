@@ -74,6 +74,15 @@
 		</java>
 	</target>
 
+	<target name="test" depends="compile">
+		<java classname="rs.ac.bg.etf.pp1.DiagnosticsTest" fork="true" failonerror="true">
+			<classpath>
+				<pathelement location="build/classes"/>
+				<path refid="project.classpath"/>
+			</classpath>
+		</java>
+	</target>
+
 	<target name="disasm" depends="check-dependencies">
 		<java classname="rs.etf.pp1.mj.runtime.disasm" fork="true" failonerror="true">
 			<arg value="test/program.obj"/>

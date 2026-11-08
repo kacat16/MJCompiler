@@ -19,25 +19,25 @@ parser code {:
     }
 
     public void syntax_error(Symbol cur_token) {
-        report_error("\nSintaksna greska", cur_token);
+        report_error("\nSyntax error", cur_token);
     }
 
     public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
-        report_fatal_error("Fatalna greska, parsiranje se ne moze nastaviti", cur_token);
+        report_fatal_error("Fatal error: parsing cannot continue", cur_token);
     }
 
     public void report_error(String message, Object info) {
         errorDetected = true;
         StringBuilder msg = new StringBuilder(message);
         if (info instanceof Symbol)
-            msg.append (" na liniji ").append(((Symbol)info).left);
+            msg.append (" at line ").append(((Symbol)info).left);
         log.error(msg.toString());
     }
 
     public void report_info(String message, Object info) {
         StringBuilder msg = new StringBuilder(message);
         if (info instanceof Symbol)
-            msg.append (" na liniji ").append(((Symbol)info).left);
+            msg.append (" at line ").append(((Symbol)info).left);
         log.info(msg.toString());
     }
 
@@ -85,28 +85,28 @@ Decl ::= (ConstD) ConstDecl
 		|
 		(AbstractClassD) AbstractClassDecl
 		;
-ConstDecl ::= (ConstDeclaration) CONST TypeConstDecl ConstList SEMI | (ConstDeclError) CONST error SEMI:l {: parser.report_error("Izvrsen oporavak od greske u definiciji konstante do ; u liniji " + lleft, null); :};
+ConstDecl ::= (ConstDeclaration) CONST TypeConstDecl ConstList SEMI | (ConstDeclError) CONST error SEMI:l {: parser.report_error("Recovered from an error in the constant definition at ; on line " + lleft, null); :};
 TypeConstDecl ::= (TypeConstDecl) Type:constType;
 ConstList ::= (Constants) ConstList COMMA ConstPart
 			| (Constant) ConstPart
 			;
-ConstPart ::= (Const) IDENT:constName EQUAL ConstType:typeOfConst | (ConstError) error:l {: parser.report_error("Izvrsen oporavak od greske u definiciji konstante u liniji " + lleft, null); :};
+ConstPart ::= (Const) IDENT:constName EQUAL ConstType:typeOfConst | (ConstError) error:l {: parser.report_error("Recovered from an error in the constant definition on line " + lleft, null); :};
 ConstType ::= (NumberConst) NUMBER:numVal | (CharConst) CHAR:charVal | (BoolConst) BOOL:boolVal;
 VarDecl ::= (VarDeclaration) TypeVarDecl VarDecls SEMI
-			| (VarDeclError) error SEMI:l {: parser.report_error("Izvrsen oporavak od greske u definiciji globalne promenljive do ; u liniji " + lleft, null); :};
+			| (VarDeclError) error SEMI:l {: parser.report_error("Recovered from an error in the global variable definition at ; on line " + lleft, null); :};
 TypeVarDecl ::= (TypeVarDecl) Type:varType;
 VarDecls ::= (MoreVarDecls) VarDecls COMMA Var
 			| (OneVarDecl) Var;
-Var ::= (VarElem) IDENT:varName IfArray | (VarError) error:l {: parser.report_error("Izvrsen oporavak od greske u definiciji globalne promenljive do , ili ; u liniji " + lleft, null); :};
+Var ::= (VarElem) IDENT:varName IfArray | (VarError) error:l {: parser.report_error("Recovered from an error in the global variable definition at , or ; on line " + lleft, null); :};
 IfArray ::= (Array) LBRACKET RBRACKET
 			| (NoArray) /* epsilon */;
 ClassDecl ::= (ClassDecl) CLASS IDENT IfSubclass LBRACE ClassVarDeclList ListMethodDecl RBRACE;
 AbstractClassDecl ::= (AbstractClassDecl) ABSTRACT CLASS IDENT IfSubclass LBRACE ClassVarDeclList ListMethodDeclAbstract RBRACE;
 IfSubclass ::= (Subclass) EXTENDS Type
 			| (NoSubclass) /* epsilon */
-			| (SubclassError) error:l {: parser.report_error("Izvrsen oporavak od greske u deklaraciji prosirenja natklase do { u liniji " + lleft, null); :};
+			| (SubclassError) error:l {: parser.report_error("Recovered from an error in the superclass extension at { on line " + lleft, null); :};
 ClassVarDecl ::= (ClassVarDeclaration) Type ClassVarDecls SEMI
-			| (ClassVarDeclError) error:l {: parser.report_error("Izvrsen oporavak od greske u deklaraciji polja unutrasnje klase do ; ili { u liniji " + lleft, null); :};
+			| (ClassVarDeclError) error:l {: parser.report_error("Recovered from an error in the class field declaration at ; or { on line " + lleft, null); :};
 ClassVarDecls ::= (ClassMoreVarDecls) ClassVarDecls COMMA IDENT IfArray
 			| (ClassOneVarDecl) IDENT IfArray;
 ClassVarDeclList ::= (ClassVarDeclarations) ClassVarDeclList ClassVarDecl
@@ -148,7 +148,7 @@ FormParams ::= (FormParameters) FormPars
 FormPars ::= (FormParsList) FormPars COMMA FormPar
 			|(OneFormPar) FormPar
 			;
-FormPar ::= (FormParam) Type:formParamType IDENT:formParamName IfArray | (FormParamError) error:l {: parser.report_error("Izvrsen oporavak od greske u deklaraciji formalnog parametra funkcije do , ili ) u liniji " + lleft, null); :};
+FormPar ::= (FormParam) Type:formParamType IDENT:formParamName IfArray | (FormParamError) error:l {: parser.report_error("Recovered from an error in the function parameter declaration at , or ) on line " + lleft, null); :};
 StatementList ::= (Statements) StatementList Statement
 				| (NoStatements) /* epsilon */;
 Label ::= (Label) IDENT;
@@ -222,7 +222,7 @@ DesignatorStatement ::= (DesignatorAssignopExpr) Designator Assignop Expr SEMI
 						| (DesignatorFunction) FunctionName LPAREN ActParsBrackets RPAREN SEMI
 						| (DesignatorIncrement) Designator PLUSPLUS SEMI
 						| (DesignatorDecrement) Designator MINUSMINUS SEMI
-						| (DesignatorStatementError) error SEMI:l {: parser.report_error("Izvrsen oporavak od greske u konstrukciji iskaza dodele do ; u liniji " + lleft, null); :};
+						| (DesignatorStatementError) error SEMI:l {: parser.report_error("Recovered from an error in the assignment statement at ; on line " + lleft, null); :};
 
 DesignatorStatementFor ::= (DesignatorAssignopExprW) Designator Assignop Expr
 						| (DesignatorFunctionW) FunctionName LPAREN ActParsBrackets RPAREN

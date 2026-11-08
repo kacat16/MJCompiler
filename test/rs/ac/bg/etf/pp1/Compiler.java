@@ -83,9 +83,9 @@ public class Compiler {
 				Code.mainPc = cg.getMainPc();
 				Code.write(new FileOutputStream(objFile));
 
-				log.info("Generisanje uspesno zavrseno!");
+				log.info("Code generation completed successfully!");
 			}else{
-				log.error("Parsiranje NIJE uspesno zavrseno!");
+				log.error("Parsing did not complete successfully!");
 			}
 
 		}

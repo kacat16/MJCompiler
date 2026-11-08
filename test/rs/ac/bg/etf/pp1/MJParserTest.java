@@ -65,10 +65,10 @@ public class MJParserTest {
 //	        	Code.dataSize = semanticCheck.nVars;
 //	        	Code.mainPc = codeGenerator.getMainPc();
 //	        	Code.write(new FileOutputStream(objFile));
-                log.info("Parsiranje uspesno zavrseno!");
+                log.info("Parsing completed successfully!");
 	        }
 	        else {
-                log.error("Parsiranje NIJE uspesno zavrseno!");
+                log.error("Parsing did not complete successfully!");
 	        }
 		}
 	}

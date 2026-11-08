@@ -42,7 +42,7 @@ ant runObj
 sources to `build/classes`. `ant run` compiles `test/program.mj` into
 `test/program.obj`. `ant runObj` disassembles and executes that bytecode,
 using `input.txt` for program input. Replace `test/program.mj` with another
-example to try it. Compiler diagnostics currently include Serbian messages.
+example to try it. Run `ant test` to check compiler diagnostics.
 
 Generated files, build output, logs, object files, and dependency JARs are
 not part of the repository. Keep them out of commits.

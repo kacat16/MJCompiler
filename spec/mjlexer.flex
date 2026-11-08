@@ -94,4 +94,4 @@ import java_cup.runtime.Symbol;
 
 ([a-z]|[A-Z])[a-z|A-Z|0-9|_]* 	{return new_symbol (sym.IDENT, yytext()); }
 
-. { System.err.println("Leksicka greska ("+yytext()+") u liniji "+(yyline+1) + "u koloni " + (yycolumn+1)); }
+. { System.err.println("Lexical error ("+yytext()+") at line "+(yyline+1) + ", column " + (yycolumn+1)); }
